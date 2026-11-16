@@ -88,7 +88,7 @@ void describe('CP-A-02 | RF07 – Registro de tarjeta (Valores Límite)', () => 
     assert.ok(res.body.data?.id > 0, 'La respuesta debe incluir el id creado')
   })
 
-  void it('POST /api/Cards con 15 dígitos (límite inferior inválido)  →  400 o 500', async () => {
+  void it('POST /api/Cards con 15 dígitos (límite inferior inválido)  →  400 esperado', { todo: 'DEF-P2-03 abierto: la API responde 500 en vez de 400' }, async () => {
     const res = await request(app)
       .post('/api/Cards')
       .set(authHeader)
@@ -98,10 +98,10 @@ void describe('CP-A-02 | RF07 – Registro de tarjeta (Valores Límite)', () => 
         expMonth: 12,
         expYear: 2080
       })
-    assert.ok(
-      res.status === 400 || res.status === 500,
-      `Se esperaba 400 o 500 para 15 dígitos, se obtuvo ${res.status}`
-    )
+    // RF07: una tarjeta de 15 dígitos se debe rechazar con 400 (error del cliente).
+    // Hoy la API responde 500 porque el error de validación no se controla (DEF-P2-03).
+    assert.equal(res.status, 400,
+      `[DEF-P2-03] Se esperaba 400 para 15 dígitos y se obtuvo ${res.status}`)
   })
 })
 
@@ -146,23 +146,17 @@ void describe('CP-A-03 | RF08 – Recarga de billetera (Valores Límite)', () =>
     assert.ok(res.headers['content-type']?.includes('application/json'))
   })
 
-  void it('PUT /rest/wallet/balance con $9 (inferior al mínimo – DEF-P2-01)  →  400 esperado; real documentado', async () => {
+  void it('PUT /rest/wallet/balance con $9 (inferior al mínimo)  →  400 esperado', { todo: 'DEF-P2-01 abierto: el backend acepta montos menores a $10' }, async () => {
     const res = await request(app)
       .put('/rest/wallet/balance')
       .set(authHeader)
       .send({ balance: 9, paymentId: cardId })
-    // El sistema DEBERÍA devolver 400 según RF08, pero actualmente devuelve 200.
-    // Este test documenta la ausencia de validación → DEF-P2-01
-    const statusObtained = res.status
-    // No se falla el test aquí para permitir captura de evidencia; se registra el comportamiento.
-    assert.ok(
-      statusObtained === 400 || statusObtained === 200,
-      `Estado inesperado: ${statusObtained}`
-    )
-    if (statusObtained === 200) {
-      // Evidencia del defecto: la API acepta montos fuera del rango definido en RF08
-      console.warn('[DEF-P2-01] El endpoint /rest/wallet/balance acepta balance=9 (< $10 mínimo). Validación ausente en el backend.')
-    }
+    // RF08: una recarga menor a $10 se debe rechazar con 400.
+    // Mientras DEF-P2-01 siga abierto, este test falla y node:test lo muestra como TODO,
+    // así se ve el defecto sin dejar la suite (ni el pipeline) en rojo.
+    // Cuando se corrija el backend, quitar la opción todo.
+    assert.equal(res.status, 400,
+      `[DEF-P2-01] Se esperaba 400 para balance=9 y se obtuvo ${res.status}`)
   })
 })
 
@@ -192,7 +186,7 @@ void describe('CP-A-04 | RF01 – Registro de usuario (Tabla de Decisión)', () 
     assert.equal(res.body.data.email, email)
   })
 
-  void it('POST /api/Users con passwords distintos  →  400 esperado; comportamiento real documentado (DEF-P2-02)', async () => {
+  void it('POST /api/Users con passwords distintos  →  400 esperado', { todo: 'DEF-P2-02 abierto: la API no compara password y passwordRepeat' }, async () => {
     const email = `reg-mismatch-${Date.now()}@juice-sh.op`
     const res = await request(app)
       .post('/api/Users')
@@ -204,15 +198,11 @@ void describe('CP-A-04 | RF01 – Registro de usuario (Tabla de Decisión)', () 
         securityQuestion: null,
         securityAnswer: null
       })
-    // La API /api/Users NO valida que password === passwordRepeat a nivel de backend.
-    // La validación sólo existe en el formulario Angular (frontend). Esto es DEF-P2-02.
-    if (res.status === 201) {
-      console.warn('[DEF-P2-02] La API /api/Users acepta passwords distintos (password ≠ passwordRepeat). Validación sólo en frontend.')
-    }
-    assert.ok(
-      res.status === 400 || res.status === 201,
-      `Estado inesperado: ${res.status}: ${JSON.stringify(res.body)}`
-    )
+    // RF01: si las contraseñas no coinciden, el registro se debe rechazar.
+    // Mientras DEF-P2-02 siga abierto, este test falla y se muestra como TODO.
+    // Cuando se corrija el backend, quitar la opción todo.
+    assert.equal(res.status, 400,
+      `[DEF-P2-02] Se esperaba 400 con passwords distintos y se obtuvo ${res.status}`)
   })
 })
 
