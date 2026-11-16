@@ -88,7 +88,7 @@ void describe('CP-A-02 | RF07 – Registro de tarjeta (Valores Límite)', () => 
     assert.ok(res.body.data?.id > 0, 'La respuesta debe incluir el id creado')
   })
 
-  void it('POST /api/Cards con 15 dígitos (límite inferior inválido)  →  400 esperado', { todo: 'DEF-P2-03 abierto: la API responde 500 en vez de 400' }, async () => {
+  void it('POST /api/Cards con 15 dígitos (límite inferior inválido)  →  400 esperado', async () => {
     const res = await request(app)
       .post('/api/Cards')
       .set(authHeader)
@@ -99,9 +99,8 @@ void describe('CP-A-02 | RF07 – Registro de tarjeta (Valores Límite)', () => 
         expYear: 2080
       })
     // RF07: una tarjeta de 15 dígitos se debe rechazar con 400 (error del cliente).
-    // Hoy la API responde 500 porque el error de validación no se controla (DEF-P2-03).
     assert.equal(res.status, 400,
-      `[DEF-P2-03] Se esperaba 400 para 15 dígitos y se obtuvo ${res.status}`)
+      `Se esperaba 400 para 15 dígitos y se obtuvo ${res.status}`)
   })
 })
 
